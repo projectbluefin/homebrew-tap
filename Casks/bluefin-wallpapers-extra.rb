@@ -64,8 +64,8 @@ cask "bluefin-wallpapers-extra" do
 
   zap trash: [
     "#{Dir.home}/.local/share/backgrounds/bluefin",
-    "#{Dir.home}/.local/share/gnome-background-properties/dusk.xml",
     "#{Dir.home}/.local/share/gnome-background-properties/duality.xml",
+    "#{Dir.home}/.local/share/gnome-background-properties/dusk.xml",
     "#{Dir.home}/.local/share/gnome-background-properties/eyes.xml",
     "#{Dir.home}/.local/share/gnome-background-properties/huntress.xml",
     "#{Dir.home}/.local/share/gnome-background-properties/lazy-days.xml",
