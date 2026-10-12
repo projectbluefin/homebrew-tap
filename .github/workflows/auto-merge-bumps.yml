@@ -1,0 +1,94 @@
+name: Auto-merge bump PRs
+
+on:
+  workflow_run:
+    workflows: ["brew test-bot"]
+    types: [completed]
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash -xeuo pipefail {0}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      qualified: ${{ steps.check.outputs.qualified }}
+    steps:
+      - name: Generate mergeraptor app token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        with:
+          client-id: ${{ secrets.MERGERAPTOR_APP_ID }}
+          private-key: ${{ secrets.MERGERAPTOR_PRIVATE_KEY }}
+
+      - name: Check out repo scripts
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/scripts
+          sparse-checkout-cone-mode: false
+
+      - name: Verify candidate PR qualifies
+        id: check
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          # Locate the open PR for this head SHA
+          pr_json=$(gh pr list --repo "$REPO" --base main --state open --json number,headRefOid,author,isDraft,labels \
+            --jq "[.[] | select(.headRefOid == \"$HEAD_SHA\" and (.isDraft | not))] | .[0] // empty")
+
+          if [ -z "$pr_json" ]; then
+            echo "No non-draft open PR targeting main with head SHA $HEAD_SHA — skipping"
+            echo "qualified=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          pr_number=$(jq -r '.number' <<<"$pr_json")
+          author=$(jq -r '.author.login // ""' <<<"$pr_json" | tr '[:upper:]' '[:lower:]' | sed -E 's/^app\///; s/\[bot\]$//')
+
+          if [ "$author" != "mergeraptor" ]; then
+            echo "PR #$pr_number author ($author) is not mergeraptor — skipping"
+            echo "qualified=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Block on explicit hold/do-not-merge labels
+          if jq -e '.labels[] | select(.name == "hold" or (.name | startswith("do-not-merge/")))' <<<"$pr_json" >/dev/null; then
+            echo "PR #$pr_number carries a hold label — skipping"
+            echo "qualified=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Enforce strict bump-only diff: only version and sha256 lines in Casks/*.rb
+          if ! gh api --paginate "repos/$REPO/pulls/$pr_number/files" | .github/scripts/bump-only.sh; then
+            echo "PR #$pr_number diff touched lines outside version/sha256 — skipping"
+            echo "qualified=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "PR #$pr_number is a qualified mergeraptor bump"
+          echo "qualified=true" >> "$GITHUB_OUTPUT"
+
+  automerge:
+    needs: qualify
+    if: needs.qualify.outputs.qualified == 'true'
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: projectbluefin/actions/.github/workflows/reusable-renovate-automerge.yml@a52da5670b9337598cbc80c4d6a9a7b21e770aec
+    with:
+      head_sha: ${{ github.event.workflow_run.head_sha }}
+      base_branch: main
+      require_auto_merge: false
+      merge_method: squash
+    secrets:
+      app_id: ${{ secrets.MERGERAPTOR_APP_ID }}
+      private_key: ${{ secrets.MERGERAPTOR_PRIVATE_KEY }}
