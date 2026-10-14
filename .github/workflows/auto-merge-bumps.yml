@@ -83,7 +83,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-    uses: projectbluefin/actions/.github/workflows/reusable-renovate-automerge.yml@a52da5670b9337598cbc80c4d6a9a7b21e770aec
+    uses: projectbluefin/actions/.github/workflows/reusable-renovate-automerge.yml@be65356ab70aa7753d0197794cdafb4a1a059379
     with:
       head_sha: ${{ github.event.workflow_run.head_sha }}
       base_branch: main
