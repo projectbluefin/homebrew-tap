@@ -9,6 +9,8 @@ jq -se '
     (.filename | test("^Casks/[a-z0-9-]+\\.rb$"))
     and .status == "modified"
     and ([(.patch // "") | split("\n")[] | select(test("^[-+]"))]
-         | length > 0 and all(.[];
+         | length > 0
+           and any(.[]; test("^\\+"))
+           and all(.[];
              test("^[-+] *(version \"[0-9A-Za-z._,-]+\"|(sha256 +)?([a-z0-9_]+: *)?\"[0-9a-f]{64}\",?) *$"))))
 ' >/dev/null

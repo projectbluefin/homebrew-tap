@@ -78,5 +78,15 @@ check 1 "bad file on second page" "[$single] [$(file README.md modified '@@ -1 +
 +x')]"
 check 1 "null page" "null"
 
+check 1 "removal-only version patch" "[$(file Casks/x.rb modified '@@ -1,2 +1 @@
+-  version "1.0"
+ cask "x" do')]"
+check 1 "removal-only sha256 patch" "[$(file Casks/x.rb modified "@@ -1,2 +1 @@
+-  sha256 \"$h1\"
+ cask \"x\" do")]"
+check 1 "removal-only version and sha256 patch" "[$(file Casks/x.rb modified "@@ -1,3 +1 @@
+-  version \"1.0\"
+-  sha256 \"$h1\"
+ cask \"x\" do")]"
 [ "$fails" -eq 0 ] && echo "bump-only: all checks passed"
 exit "$fails"
