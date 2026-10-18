@@ -12,8 +12,8 @@ trap 'rm -rf "$tmp"' EXIT
 
 # snippet CASK BLOCK: print the heredoc passed to `run` inside `BLOCK do`,
 # dedented the way Ruby's <<~ does. Unquoted heredocs must not contain
-# backslashes or #{...}: Ruby would rewrite those, so the text here would
-# no longer be what Homebrew runs.
+# backslashes or #{, #$ or #@ (Ruby interpolation): Ruby would rewrite
+# those, so the text here would no longer be what Homebrew runs.
 snippet() {
   awk -v block="  $2 do" '
     index($0, block) == 1 { inblock = 1; next }
@@ -33,7 +33,7 @@ snippet() {
       if (!done) { print "no heredoc in block: " block > "/dev/stderr"; exit 1 }
       for (i = 1; i <= n; i++) {
         line = substr(lines[i], min + 1)
-        if (!quoted && (line ~ /\\/ || line ~ /#\{/)) {
+        if (!quoted && (line ~ /\\/ || line ~ /#[{$@]/)) {
           print "unquoted heredoc needs Ruby escaping: " line > "/dev/stderr"; exit 1
         }
         print line
