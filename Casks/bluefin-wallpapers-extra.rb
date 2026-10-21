@@ -1,8 +1,11 @@
 cask "bluefin-wallpapers-extra" do
-  version "2026-10-12"
-  sha256 "1aaa25a82da8670145d67bd4da25852cd29103ac1fc6210169f33baaded02f5b"
+  on_linux do
+    version "2026-10-12"
+    sha256 "1aaa25a82da8670145d67bd4da25852cd29103ac1fc6210169f33baaded02f5b"
 
-  url "https://github.com/projectbluefin/artwork/releases/download/bluefin-extra-v#{version}/bluefin-wallpapers-extra-gnome.tar.zstd"
+    url "https://github.com/projectbluefin/artwork/releases/download/bluefin-extra-v#{version}/bluefin-wallpapers-extra-gnome.tar.zstd"
+  end
+
   name "bluefin-wallpapers-extra"
   desc "Extra Wallpapers for Bluefin"
   homepage "https://github.com/projectbluefin/artwork"
