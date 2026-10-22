@@ -23,7 +23,7 @@ jobs:
     steps:
       - name: Generate mergeraptor app token
         id: app-token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3
         with:
           client-id: ${{ secrets.MERGERAPTOR_APP_ID }}
           private-key: ${{ secrets.MERGERAPTOR_PRIVATE_KEY }}
@@ -83,7 +83,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-    uses: projectbluefin/actions/.github/workflows/reusable-renovate-automerge.yml@be65356ab70aa7753d0197794cdafb4a1a059379
+    uses: projectbluefin/actions/.github/workflows/reusable-renovate-automerge.yml@a7e7bba6c7ae819006cabc9a106318c77c2635f8
     with:
       head_sha: ${{ github.event.workflow_run.head_sha }}
       base_branch: main
