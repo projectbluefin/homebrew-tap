@@ -5,13 +5,5 @@
   ],
   "github-actions": {
     "enabled": false
-  },
-  "packageRules": [
-    {
-      "description": "ghcr.io/homebrew/brew:main rebuilds constantly; avoid daily digest-pin churn",
-      "matchDatasources": ["docker"],
-      "matchPackageNames": ["ghcr.io/homebrew/brew"],
-      "pinDigests": false
-    }
-  ]
+  }
 }
