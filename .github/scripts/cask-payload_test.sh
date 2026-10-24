@@ -24,9 +24,13 @@ trap 'rm -rf "$tmp"' EXIT
 
 # Print the cask as one statement per line: a line ending in "," is joined with
 # the next one, so multi-line `copy`/`inreplace` calls can be matched whole.
+# Comment lines are dropped first so a trailing "," in one cannot swallow the
+# statement after it.
 statements() {
   awk '
-    { sub(/^[[:space:]]+/, ""); buf = (buf == "" ? $0 : buf " " $0) }
+    { sub(/^[[:space:]]+/, "") }
+    /^#/ { next }
+    { buf = (buf == "" ? $0 : buf " " $0) }
     !/,$/ { print buf; buf = "" }
     END { if (buf != "") print buf }
   ' "$1"
@@ -39,7 +43,7 @@ field() {
 
 check_archive() { # cask label url sha dir
   local cask=$1 label=$2 url=$3 sha=$4 dir=$5 archive="$tmp/archive"
-  if ! curl -fsSL --retry 3 -o "$archive" "$url"; then
+  if ! curl -fsSL --retry 3 --connect-timeout 30 --max-time 600 -o "$archive" "$url"; then
     fail "$label: could not download $url"
     return
   fi
