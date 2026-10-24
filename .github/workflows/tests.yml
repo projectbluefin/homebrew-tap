@@ -55,3 +55,13 @@ jobs:
           sparse-checkout: .github/scripts
           sparse-checkout-cone-mode: false
       - run: .github/scripts/bump-only_test.sh
+
+  cask-steps:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: .github/scripts/cask-steps_test.sh
