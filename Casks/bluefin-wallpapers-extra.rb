@@ -1,7 +1,7 @@
 cask "bluefin-wallpapers-extra" do
   on_linux do
-    version "2026-10-12"
-    sha256 "1aaa25a82da8670145d67bd4da25852cd29103ac1fc6210169f33baaded02f5b"
+    version "2026-10-23"
+    sha256 "75d6d9269b8e277787b3cc0a7a6fb1401783bb197ef344db185dac634cae3399"
 
     url "https://github.com/projectbluefin/artwork/releases/download/bluefin-extra-v#{version}/bluefin-wallpapers-extra-gnome.tar.zstd"
   end
