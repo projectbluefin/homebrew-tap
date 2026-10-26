@@ -23,6 +23,9 @@ cask "chairlift" do
     end
   end
 
+  # Printer applications are enabled only after `cosign verify` checks their
+  # publisher signature (chairlift#612); no OS image ships cosign at runtime.
+  depends_on formula: "cosign"
   depends_on :linux
 
   binary "chairlift"
