@@ -23,10 +23,10 @@ cask "chairlift" do
     end
   end
 
-  depends_on :linux
   # Printer applications are enabled only after `cosign verify` checks their
   # publisher signature (chairlift#612); no OS image ships cosign at runtime.
   depends_on formula: "cosign"
+  depends_on :linux
 
   binary "chairlift"
   binary "data/chairlift-wrapper.sh", target: "chairlift-wrapper"
