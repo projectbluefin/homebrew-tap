@@ -1,12 +1,12 @@
 cask "bluefin-report" do
   arch arm: "arm64", intel: "amd64"
 
-  version "0.1.2"
-  sha256 arm64_linux:  "21618764a7da5eacea19e2707e7b7f044717d41bbd800725254ae6dd9698b968",
-         x86_64_linux: "be22e81698e6794831e06914d7dd01f4e3712c13ceef399d27270eea437660d5"
+  version "26.10.1"
+  sha256 arm64_linux:  "4f4756b8caa3419098ef69e7d84d1708ece617b1da2f4b7db5d882b252234517",
+         x86_64_linux: "5bd91d935ca45a771b2f63afa3abd2931e13787bc505e30f9a817938e03e5860"
 
-  url "https://github.com/projectbluefin/bluefin-report/releases/download/v#{version}/bluefin-report_#{version}_linux_#{arch}.tar.gz"
-  name "Bluefin Report"
+  url "https://github.com/projectbluefin/bluefin-report/releases/download/#{version}/bluefin-report_#{version}_linux_#{arch}.tar.gz"
+  name "Report a problem"
   desc "Review and share a privacy-scrubbed systemd-report as a GitHub issue"
   homepage "https://github.com/projectbluefin/bluefin-report"
 
