@@ -2,7 +2,6 @@
 # Do not edit here: change maintainers.yaml in projectbluefin/.project.
 approvers:
   - ahmedadan
-  - alatiera
   - bketelsen
   - castrojo
   - daegalus
@@ -18,7 +17,6 @@ approvers:
   - ximian
 reviewers:
   - ahmedadan
-  - alatiera
   - bketelsen
   - castrojo
   - daegalus
