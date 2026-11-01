@@ -57,6 +57,6 @@ cask "bluefin-report" do
 
   caveats <<~EOS
     Bluefin Report requires systemd 262 and GTK 4 / libadwaita 1 shared
-    libraries from your OS. Publishing uses gh (brew install gh).
+    libraries from your OS. Publishing to GitHub needs `gh auth login`.
   EOS
 end
