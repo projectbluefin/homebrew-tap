@@ -28,6 +28,7 @@ Using in a `Brewfile`:
 tap "projectbluefin/tap"
 cask "chairlift"
 cask "bluefin-wallpapers-extra"
+cask "bluefin-report"
 ```
 
 ## Packages in this tap
