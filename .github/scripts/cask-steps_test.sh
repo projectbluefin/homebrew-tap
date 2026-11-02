@@ -125,5 +125,93 @@ run_uninst "$case_dir" || fail "chairlift uninstall fails when only the compiled
 [ ! -s "$tmp/compiled" ] || fail "chairlift uninstall compiled an empty schema directory"
 [ ! -e "$case_dir/$schemas/gschemas.compiled" ] || fail "chairlift uninstall left a stale compiled cache"
 
+# --- bluefin-report, chairlift: preflight rewrites make menu launches work ---
+# A menu launch has no Homebrew PATH. The preflight `inreplace` steps point the
+# wrapper at this prefix's brew and binary, and the .desktop entry at the
+# wrapper. Apply them, as Homebrew would, to copies of the release files and
+# run the result with nothing from Homebrew on PATH.
+
+# inreplaces CASK: print FILE, BEFORE and AFTER (NUL-separated) for each
+# `inreplace` call, with Ruby's \" and \\ escapes undone.
+inreplaces() {
+  awk '
+    { sub(/^[[:space:]]+/, "") }
+    /^#/ { next }
+    { buf = (buf == "" ? $0 : buf " " $0) }
+    !/,$/ { if (buf ~ /^inreplace /) print buf; buf = "" }
+  ' "$1" | while IFS= read -r stmt; do
+    s='"((\\.|[^"\\])*)"' esc='\\[^"\\]'
+    if ! [[ $stmt =~ ^inreplace\ $s,\ *$s,\ *$s$ ]]; then
+      echo "cannot parse: $stmt" >&2
+      return 1
+    fi
+    for arg in "${BASH_REMATCH[1]}" "${BASH_REMATCH[3]}" "${BASH_REMATCH[5]}"; do
+      if [[ $arg == *'#{'* || $arg =~ $esc ]]; then
+        echo "needs Ruby evaluation: $stmt" >&2
+        return 1
+      fi
+      arg=${arg//'\"'/'"'}
+      printf '%s\0' "${arg//'\\'/'\'}"
+    done
+  done
+}
+
+check_launcher() { # cask app wrapper desktop wrapper-body desktop-exec
+  local cask=Casks/$1.rb app=$2 wrapper=$3 desktop=$4 dir="$tmp/launch-$1"
+  local prefix="$dir/brew prefix" file before after content target out applied=0
+  mkdir -p "$dir/staged/data" "$prefix/bin" "$dir/decoy"
+  printf '%s\n' "$5" >"$dir/staged/$wrapper"
+  printf '[Desktop Entry]\nName=%s\nExec=%s\n' "$app" "$6" >"$dir/staged/$desktop"
+
+  inreplaces "$cask" >"$dir/inreplaces" || { fail "$1 inreplace steps could not be read"; return; }
+  while IFS= read -r -d '' file && IFS= read -r -d '' before && IFS= read -r -d '' after; do
+    [ -f "$dir/staged/$file" ] || { fail "$1 inreplace names unexpected file $file"; continue; }
+    content=$(<"$dir/staged/$file")
+    [[ $content == *"$before"* ]] || fail "$1 inreplace finds no \"$before\" in $file"
+    after=${after//'{{HOMEBREW_PREFIX}}'/$prefix}
+    printf '%s\n' "${content//"$before"/"$after"}" >"$dir/staged/$file"
+    applied=$((applied + 1))
+  done <"$dir/inreplaces"
+  [ "$applied" -gt 0 ] || { fail "$1 has no inreplace steps to check"; return; }
+
+  target=$(sed -nE "s|^[[:space:]]*binary \"$wrapper\", target: \"([^\"]+)\".*|\\1|p" "$cask")
+  [ -n "$target" ] || { fail "$1 does not link $wrapper as a binary"; return; }
+  ln -s "$dir/staged/$wrapper" "$prefix/bin/$target"
+  [ "$(grep '^Exec=' "$dir/staged/$desktop")" = "Exec=\"$prefix/bin/$target\"" ] ||
+    fail "$1 desktop entry does not launch the linked $target"
+  ! grep -q /home/linuxbrew "$dir/staged/$wrapper" || fail "$1 wrapper still names the default brew prefix"
+
+  # The stub brew records how shellenv was called and leaves PATH alone, so
+  # only an absolute exec reaches the prefix's binary instead of the decoy.
+  cat >"$prefix/bin/brew" <<'EOF'
+#!/bin/sh
+echo "export SHELLENV_ARGS='$*'"
+EOF
+  cat >"$prefix/bin/$app" <<'EOF'
+#!/bin/sh
+printf 'app:%s:' "$SHELLENV_ARGS"; printf '[%s]' "$@"
+EOF
+  printf '#!/bin/sh\necho decoy\n' >"$dir/decoy/$app"
+  chmod +x "$prefix/bin/brew" "$prefix/bin/$app" "$dir/decoy/$app" "$dir/staged/$wrapper"
+
+  bash -n "$dir/staged/$wrapper" || fail "$1 wrapper is not valid bash after preflight"
+  out=$(env -i HOME="$dir" PATH="$dir/decoy:/usr/bin:/bin" "$prefix/bin/$target" "a b" c) ||
+    fail "$1 wrapper exited non-zero"
+  [ "$out" = "app:shellenv bash:[a b][c]" ] ||
+    fail "$1 wrapper did not load brew shellenv and run the prefix's $app with its arguments (got: $out)"
+}
+
+# Wrapper and desktop text as shipped in the releases these casks install.
+release_wrapper='#!/bin/bash
+BREW_PATH="/home/linuxbrew/.linuxbrew/bin/brew"
+if [ -f "$BREW_PATH" ]; then
+    eval "$($BREW_PATH shellenv)"
+fi
+exec APP "$@"'
+check_launcher bluefin-report bluefin-report data/bluefin-report-wrapper.sh \
+  data/io.projectbluefin.Report.desktop "${release_wrapper/APP/bluefin-report}" bluefin-report
+check_launcher chairlift chairlift data/chairlift-wrapper.sh \
+  data/io.projectbluefin.chairlift.desktop "${release_wrapper/APP/chairlift}" chairlift-wrapper
+
 [ "$fails" -eq 0 ] && echo "cask-steps: all checks passed"
 exit "$fails"
