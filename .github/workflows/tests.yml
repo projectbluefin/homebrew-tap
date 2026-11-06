@@ -65,3 +65,31 @@ jobs:
         with:
           persist-credentials: false
       - run: .github/scripts/cask-steps_test.sh
+
+  cask-payload:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: .github/scripts/cask-payload_test.sh
+
+  test-scripts-wired:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github
+          sparse-checkout-cone-mode: false
+      - name: Every .github/scripts/*_test.sh is run by a workflow
+        run: |
+          missing=0
+          for t in .github/scripts/*_test.sh; do
+            grep -qF "$t" .github/workflows/*.yml || { echo "::error file=$t::no workflow runs $t"; missing=1; }
+          done
+          exit "$missing"
