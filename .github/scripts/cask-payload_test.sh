@@ -14,8 +14,12 @@
 #   - every `"$PWD"/DIR/*` glob in an embedded script matches at least one file
 #     (the scripts use nullglob, so a renamed DIR would silently do nothing)
 #   - when a step rewrites `~` in XML, at least one XML file contains `~/`
+#   - when a step links "$PWD"/images/*, every `~/` path in the XML exists
+#     after running that step
 set -euo pipefail
 cd "$(dirname "$0")/../.."
+# shellcheck source=SCRIPTDIR/cask-snippet.sh
+source .github/scripts/cask-snippet.sh
 
 fails=0
 fail() { echo "FAIL: $1"; fails=$((fails + 1)); }
@@ -92,6 +96,27 @@ check_archive() { # cask label url sha dir
   if grep -qF -- "-name '*.xml'" "$cask" && grep -qF -- 's|~|' "$cask"; then
     [ -n "$(find "$dir" -type f -name '*.xml' -exec grep -lF '~/' {} + 2>/dev/null | head -n1)" ] ||
       fail "$label: no XML file uses ~/ for the install step to rewrite"
+  fi
+
+  # The XML names each wallpaper by the folder the postflight step links it
+  # into. Run that step against the archive and require every ~/ path to
+  # exist, or GNOME lists the wallpaper with a blank picture.
+  # shellcheck disable=SC2016 # literal $PWD in the cask's script
+  if grep -qF '"$PWD"/images/*' "$cask"; then
+    local home="$dir.home" post ref
+    while IFS= read -r path; do
+      mkdir -p "$home/$path"
+    done < <(statements "$cask" | sed -nE 's/^mkdir_p "([^"]+)".*/\1/p')
+    if ! post=$(snippet "$cask" postflight_steps); then
+      fail "$label: cannot read the postflight script"
+    elif ! (cd "$dir" && WALLPAPER_HOME="$home" /bin/bash -eu -c "$post"); then
+      fail "$label: postflight script failed on the archive"
+    else
+      # shellcheck disable=SC2088 # literal ~/ in the archive's XML
+      while IFS= read -r ref; do
+        [ -e "$home/${ref#'~/'}" ] || fail "$label: XML names $ref, which the install steps never create"
+      done < <(find "$dir" -type f -name '*.xml' -exec grep -ohE '~/[^<"]+' {} + | sort -u)
+    fi
   fi
 }
 
