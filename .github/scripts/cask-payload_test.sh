@@ -10,6 +10,7 @@
 # Checked per archive:
 #   - the download matches the cask's sha256
 #   - every `binary` and `copy` source exists
+#   - every `*.gschema.xml` file in the archive is copied by a step
 #   - every `inreplace` file exists and still contains the text it replaces
 #   - every `"$PWD"/DIR/*` glob in an embedded script matches at least one file
 #     (the scripts use nullglob, so a renamed DIR would silently do nothing)
@@ -85,6 +86,17 @@ check_archive() { # cask label url sha dir
         ;;
     esac
   done < <(statements "$cask")
+
+  # Every settings schema the archive ships must be copied by an install
+  # step. A schema that is not copied is never compiled, and the app then
+  # cannot read or save that setting.
+  local stmts schema
+  stmts=$(statements "$cask")
+  while IFS= read -r schema; do
+    schema=${schema#"$dir"/}
+    grep -qF -- "copy \"$schema\"," <<<"$stmts" ||
+      fail "$label: archive ships $schema but no copy step installs it"
+  done < <(find "$dir" -type f -name '*.gschema.xml' | sort)
 
   # shellcheck disable=SC2016 # literal $PWD in the cask's script
   while IFS= read -r path; do
