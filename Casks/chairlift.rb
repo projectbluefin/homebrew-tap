@@ -50,11 +50,12 @@ cask "chairlift" do
          ".local/share/icons/hicolor/scalable/apps/io.projectbluefin.chairlift.svg", target_base: :home
     copy "data/icons/hicolor/symbolic/apps/io.projectbluefin.chairlift-symbolic.svg",
          ".local/share/icons/hicolor/symbolic/apps/io.projectbluefin.chairlift-symbolic.svg", target_base: :home
-    # GSettings schemas for the Livery, Updates and First-Run settings. Without
-    # a compiled cache in a directory GSettings searches, the Livery page reports
-    # its settings unavailable, update preferences never persist, and setup
-    # choices are never recorded. The user data dir is searched by GLib and needs
-    # no root; HOMEBREW_PREFIX/share is not on XDG_DATA_DIRS for desktop launches.
+    # GSettings schemas for the Livery, Updates, First-Run and Printers settings.
+    # Without a compiled cache in a directory GSettings searches, the Livery page
+    # reports its settings unavailable, update preferences never persist, setup
+    # choices are never recorded, and a printer driver's USB printer cannot be
+    # chosen. The user data dir is searched by GLib and needs no root;
+    # HOMEBREW_PREFIX/share is not on XDG_DATA_DIRS for desktop launches.
     mkdir_p ".local/share/glib-2.0/schemas", base: :home
     copy "data/io.projectbluefin.chairlift.livery.gschema.xml",
          ".local/share/glib-2.0/schemas/io.projectbluefin.chairlift.livery.gschema.xml", target_base: :home
@@ -62,6 +63,8 @@ cask "chairlift" do
          ".local/share/glib-2.0/schemas/io.projectbluefin.chairlift.updates.gschema.xml", target_base: :home
     copy "data/io.projectbluefin.chairlift.firstrun.gschema.xml",
          ".local/share/glib-2.0/schemas/io.projectbluefin.chairlift.firstrun.gschema.xml", target_base: :home
+    copy "data/io.projectbluefin.chairlift.printers.gschema.xml",
+         ".local/share/glib-2.0/schemas/io.projectbluefin.chairlift.printers.gschema.xml", target_base: :home
     symlink ".", ".user-home", source_base: :home, overwrite: true
     run "/usr/bin/glib-compile-schemas", chdir:          "{{staged_path}}",
                                          writable_paths: [".local/share/glib-2.0/schemas"],
@@ -75,7 +78,8 @@ cask "chairlift" do
             ".local/share/icons/hicolor/symbolic/apps/io.projectbluefin.chairlift-symbolic.svg",
             ".local/share/glib-2.0/schemas/io.projectbluefin.chairlift.livery.gschema.xml",
             ".local/share/glib-2.0/schemas/io.projectbluefin.chairlift.updates.gschema.xml",
-            ".local/share/glib-2.0/schemas/io.projectbluefin.chairlift.firstrun.gschema.xml"], base: :home
+            ".local/share/glib-2.0/schemas/io.projectbluefin.chairlift.firstrun.gschema.xml",
+            ".local/share/glib-2.0/schemas/io.projectbluefin.chairlift.printers.gschema.xml"], base: :home
     # Recompile what other applications left in the directory, or drop the
     # cache if ChairLift's schemas were the only ones.
     # Homebrew runs steps with its own HOME, so the user's home is reached
